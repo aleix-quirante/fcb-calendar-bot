@@ -9,7 +9,7 @@ Un bot automatizado en Python que descarga el calendario oficial de partidos del
 - **Contribuciones en GitHub:** Genera un commit automático en el archivo `log_partidos.md` tras cada ejecución exitosa, manteniendo activa tu gráfica de contribuciones.
 - **Fácil Despliegue:** Preparado para funcionar directamente en GitHub Actions usando Secrets.
 
-## 🚀 Requisitos
+## 🚀 Requisitosm
 
 - Python 3.9 o superior (para ejecución local).
 - Una cuenta de Google Cloud Platform (GCP) con la API de Google Calendar habilitada.
