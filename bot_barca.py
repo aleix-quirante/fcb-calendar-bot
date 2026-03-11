@@ -8,10 +8,8 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 
-# URL del calendario oficial del Barça (formato .ics)
-URL_CALENDARIO = (
-    "https://www.fcbarcelona.com/fcbarcelona/schedule/football/first-team/calendar.ics"
-)
+# URL del calendario del Barça (formato .ics alternativo)
+URL_CALENDARIO = "https://ics.fixtur.es/v2/fc-barcelona.ics"
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
 
