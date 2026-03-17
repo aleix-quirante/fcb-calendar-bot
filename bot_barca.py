@@ -96,16 +96,25 @@ def obtener_eventos_ics():
             if not summary.startswith("⚽"):
                 summary = "⚽ " + summary.strip()
 
-            # Solo guardamos eventos futuros o recientes (opcional)
-            eventos.append(
-                {
-                    "summary": summary,
-                    "start": dtstart,
-                    "end": dtend,
-                    "location": location,
-                    "uid": uid,
-                }
-            )
+            # Solo guardamos eventos futuros o recientes (últimos 7 días)
+            now_utc = datetime.now(timezone.utc)
+            if hasattr(dtstart, "tzinfo") and dtstart.tzinfo is not None:
+                diff = dtstart - now_utc
+            else:
+                # Si es naive, asumimos UTC
+                diff = dtstart.replace(tzinfo=timezone.utc) - now_utc
+
+            # Guardamos desde hace 7 días hasta el futuro
+            if diff.days >= -7:
+                eventos.append(
+                    {
+                        "summary": summary,
+                        "start": dtstart,
+                        "end": dtend,
+                        "location": location,
+                        "uid": uid,
+                    }
+                )
 
     print(f"Se encontraron {len(eventos)} partidos confirmados en el ICS.")
     return eventos
@@ -221,6 +230,12 @@ def sincronizar_eventos(servicio, eventos, probabilidades):
                 "start": start_body,
                 "end": end_body,
                 "iCalUID": partido["uid"],
+                "sequence": int(
+                    datetime.now().timestamp() % 1000000
+                ),  # Forzar actualización
+                "updated": datetime.now(timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z"),
                 # Importante: para evitar duplicados si se actualiza
                 # Podemos usar la importación para sobreescribir usando iCalUID
             }

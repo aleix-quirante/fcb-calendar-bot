@@ -2,8 +2,9 @@ name: Sincronizador Cule Diario
 
 on:
   schedule:
-    # Se ejecuta a las 08:00, 14:00 y 20:00 UTC (Mañana, Mediodía y Tarde/Noche)
-    - cron: '0 8,14,20 * * *'
+    # Se ejecuta cada hora (00, 01, 02...) para mantener actualizadas las 
+    # probabilidades a cada hora, y por consiguiente a las 6h, 3h, 2h y 1h antes del partido.
+    - cron: '0 * * * *'
   workflow_dispatch: # Permite darle al botón de "Play" manual
 
 jobs:
