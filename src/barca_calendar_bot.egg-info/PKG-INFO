@@ -1,0 +1,110 @@
+Metadata-Version: 2.4
+Name: barca-calendar-bot
+Version: 3.0.0
+Summary: Bot que sincroniza el calendario del FC Barcelona con Google Calendar, añadiendo probabilidades de victoria y resúmenes automáticos.
+Author-email: Aleix Quirante <quirante70@gmail.com>
+License: MIT
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Utilities
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.32
+Requires-Dist: icalendar>=5.0
+Requires-Dist: google-api-python-client>=2.130
+Requires-Dist: google-auth-httplib2>=0.2
+Requires-Dist: google-auth-oauthlib>=1.2
+Requires-Dist: beautifulsoup4>=4.12
+Requires-Dist: lxml>=5.0
+Requires-Dist: pydantic>=2.10
+Requires-Dist: pydantic-settings>=2.5
+Requires-Dist: httpx>=0.27
+Requires-Dist: cachetools>=5.3
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-cov>=5.0; extra == "dev"
+Requires-Dist: black>=24.0; extra == "dev"
+Requires-Dist: ruff>=0.4; extra == "dev"
+Requires-Dist: mypy>=1.10; extra == "dev"
+Requires-Dist: types-requests; extra == "dev"
+Requires-Dist: types-cachetools; extra == "dev"
+
+# ⚽ Barça Calendar Bot
+
+Un bot automatizado en Python que descarga el calendario oficial de partidos del FC Barcelona y lo sincroniza con tu Google Calendar. Además, se ejecuta diariamente mediante GitHub Actions, manteniendo un registro de actividad y sumando contribuciones ("commits verdes") en tu perfil de GitHub.
+
+## 🌟 Características
+
+- **Sincronización Automática:** Descarga el archivo `.ics` del FC Barcelona y añade/actualiza los eventos en Google Calendar de forma fluida.
+- **Predicción de Victoria Actualizada:** Consulta las probabilidades de victoria del Barça para cada partido futuro utilizando el sistema [ClubElo](http://clubelo.com). La lógica ha sido optimizada para actualizar automáticamente la descripción de los eventos existentes en tu calendario.
+- **Calendario Siempre Limpio:** El bot implementa una función de filtrado y limpieza automática:
+  - **Solo Futuro:** Solo se sincronizan los partidos que aún no han comenzado.
+  - **Auto-Limpieza:** Se eliminan automáticamente del calendario los partidos ya finalizados, asegurando una vista despejada y centrada en los próximos encuentros.
+- **Automatización Constante:** Utiliza GitHub Actions para ejecutarse 3 veces al día (Mañana, Mediodía y Tarde/Noche) sin intervención manual.
+- **Contribuciones en GitHub:** Genera un commit automático en el archivo `log_partidos.md` tras cada ejecución exitosa, manteniendo activa tu gráfica de contribuciones.
+- **Fácil Despliegue:** Preparado para funcionar directamente en GitHub Actions usando Secrets.
+
+## 🚀 Requisitos
+
+- Python 3.9 o superior (para ejecución local).
+- Una cuenta de Google Cloud Platform (GCP) con la API de Google Calendar habilitada.
+- Credenciales OAuth 2.0 de Google (`credentials.json`).
+
+## ⚙️ Configuración y Uso Local
+
+1. **Clonar el repositorio y preparar el entorno:**
+   ```bash
+   git clone <tu-repositorio>
+   cd barca-calendar-bot
+   python -m venv .venv
+   source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+2. **Obtener las credenciales de Google API:**
+   - Ve a la [Consola de Google Cloud](https://console.cloud.google.com/).
+   - Crea un nuevo proyecto y habilita la **Google Calendar API**.
+   - Configura la Pantalla de Consentimiento de OAuth (añade tu correo como usuario de prueba).
+   - Crea credenciales de tipo **ID de cliente de OAuth** (Aplicación de escritorio).
+   - Descarga el archivo JSON de credenciales y guárdalo en la raíz del proyecto con el nombre `credentials.json`.
+
+3. **Generar el Token de Acceso:**
+   Ejecuta el script para generar el token inicial. Se abrirá una ventana en tu navegador para que autorices a la aplicación:
+   ```bash
+   python generar_token.py
+   ```
+   Esto creará un archivo `token.json` que contiene tu token de acceso y de refresco.
+
+4. **Ejecutar el Bot:**
+   ```bash
+   python bot_barca.py
+   ```
+   El script descargará el calendario, sincronizará los eventos con tu Google Calendar y añadirá una línea al archivo `log_partidos.md`.
+
+## ☁️ Configuración en GitHub Actions
+
+Para que el bot se ejecute automáticamente todos los días en la nube:
+
+1. Asegúrate de haber generado el archivo `token.json` localmente (ver paso anterior).
+2. Abre el archivo `token.json` y copia todo su contenido.
+3. Ve a tu repositorio en GitHub > **Settings** > **Secrets and variables** > **Actions**.
+4. Crea un nuevo secreto llamado `GOOGLE_TOKEN_JSON` y pega el contenido de `token.json` como valor.
+5. ¡Listo! El bot se ejecutará automáticamente según el cronograma definido en `.github/workflows/run_bot.yml`.
+
+## 📁 Estructura del Proyecto
+
+- `bot_barca.py`: Script principal que hace el fetching del `.ics`, obtiene probabilidades y sincroniza con Google Calendar (incluyendo limpieza de eventos pasados).
+- `generar_token.py`: Script auxiliar para realizar la primera autenticación OAuth y obtener el `token.json`.
+- `requirements.txt`: Dependencias de Python necesarias.
+- `.github/workflows/run_bot.yml`: Configuración del workflow de GitHub Actions.
+- `log_partidos.md`: Archivo de registro que se actualiza automáticamente con cada ejecución.
+
+## 📝 Notas Adicionales
+
+- El bot utiliza el `iCalUID` de los eventos para evitar duplicados y permitir actualizaciones de datos (como el porcentaje de victoria) en eventos ya creados.
+- La limpieza automática elimina eventos cuya hora de finalización sea anterior a la hora actual de ejecución del bot.
+
+---
+*Força Barça! 🔴🔵*

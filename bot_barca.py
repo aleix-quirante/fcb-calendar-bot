@@ -10,6 +10,10 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 
+from src.calendar_cleaner.cleaner import create_cleaner
+from src.calendar_cleaner.models import CalendarCleanerConfig
+from src.shared.config import settings
+
 # URL del calendario del Barça (formato .ics alternativo)
 URL_CALENDARIO = "https://ics.fixtur.es/v2/fc-barcelona.ics"
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
@@ -146,41 +150,23 @@ def obtener_servicio_google():
 def limpiar_eventos_viejos(servicio, calendar_id):
     """Busca y elimina eventos del bot que ya hayan finalizado para mantener el calendario limpio."""
     print("Buscando eventos antiguos para eliminar...")
-    # Consideramos antiguos todos los eventos que terminaron antes de ahora
-    ahora = datetime.now(timezone.utc).isoformat()
-
     try:
-        # Paginamos sobre los eventos.
-        page_token = None
-        while True:
-            events_result = (
-                servicio.events()
-                .list(
-                    calendarId=calendar_id,
-                    timeMax=ahora,
-                    q="Barça Bot",  # Filtro básico para eventos del bot
-                    maxResults=250,
-                    pageToken=page_token,
-                )
-                .execute()
-            )
-
-            events = events_result.get("items", [])
-
-            for event in events:
-                if "Barça Bot" in event.get("description", ""):
-                    print(
-                        f"Eliminando evento antiguo: {event.get('summary')} ({event.get('start', {}).get('date', event.get('start', {}).get('dateTime'))})"
-                    )
-                    servicio.events().delete(
-                        calendarId=calendar_id, eventId=event["id"]
-                    ).execute()
-
-            page_token = events_result.get("nextPageToken")
-            if not page_token:
-                break
-
-        print("✅ Limpieza de eventos antiguos completada.")
+        # Configuración del cleaner basada en settings globales
+        config = CalendarCleanerConfig(
+            retention_days=settings.retention_days,
+            batch_size=settings.cleanup_batch_size,
+            dry_run=settings.cleanup_dry_run,
+            filter_description="Barça Bot",
+        )
+        cleaner = create_cleaner(servicio, calendar_id=calendar_id, config=config)
+        stats = cleaner.run()
+        print(
+            f"✅ Limpieza de eventos antiguos completada. "
+            f"Escaneados: {stats.total_scanned}, "
+            f"elegibles: {stats.eligible_for_deletion}, "
+            f"eliminados: {stats.deleted}, "
+            f"errores: {stats.errors}"
+        )
     except Exception as e:
         print(f"Error al limpiar eventos viejos: {e}")
 

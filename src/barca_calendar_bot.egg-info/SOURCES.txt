@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+src/barca_calendar_bot.egg-info/PKG-INFO
+src/barca_calendar_bot.egg-info/SOURCES.txt
+src/barca_calendar_bot.egg-info/dependency_links.txt
+src/barca_calendar_bot.egg-info/requires.txt
+src/barca_calendar_bot.egg-info/top_level.txt
+src/calendar_cleaner/__init__.py
+src/calendar_cleaner/cleaner.py
+src/calendar_cleaner/models.py
+src/shared/__init__.py
+src/shared/config.py
+src/shared/logging_config.py
+src/sports_summary_agent/__init__.py
+src/win_probability_fix/__init__.py
+src/win_probability_fix/clubelo_client.py
+src/win_probability_fix/models.py
