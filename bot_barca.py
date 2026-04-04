@@ -96,7 +96,7 @@ def obtener_eventos_ics():
             if not summary.startswith("⚽"):
                 summary = "⚽ " + summary.strip()
 
-            # Solo guardamos eventos futuros o recientes (últimos 7 días)
+            # Solo guardamos eventos futuros
             now_utc = datetime.now(timezone.utc)
             if hasattr(dtstart, "tzinfo") and dtstart.tzinfo is not None:
                 diff = dtstart - now_utc
@@ -104,8 +104,8 @@ def obtener_eventos_ics():
                 # Si es naive, asumimos UTC
                 diff = dtstart.replace(tzinfo=timezone.utc) - now_utc
 
-            # Guardamos desde hace 7 días hasta el futuro
-            if diff.days >= -7:
+            # Guardamos solo eventos futuros (que no hayan empezado)
+            if diff.total_seconds() > 0:
                 eventos.append(
                     {
                         "summary": summary,
@@ -144,9 +144,10 @@ def obtener_servicio_google():
 
 
 def limpiar_eventos_viejos(servicio, calendar_id):
-    """Busca y elimina eventos del bot que tengan más de dos semanas de antigüedad."""
+    """Busca y elimina eventos del bot que ya hayan finalizado para mantener el calendario limpio."""
     print("Buscando eventos antiguos para eliminar...")
-    hace_dos_semanas = (datetime.now(timezone.utc) - timedelta(weeks=2)).isoformat()
+    # Consideramos antiguos todos los eventos que terminaron antes de ahora
+    ahora = datetime.now(timezone.utc).isoformat()
 
     try:
         # Paginamos sobre los eventos.
@@ -156,7 +157,7 @@ def limpiar_eventos_viejos(servicio, calendar_id):
                 servicio.events()
                 .list(
                     calendarId=calendar_id,
-                    timeMax=hace_dos_semanas,
+                    timeMax=ahora,
                     q="Barça Bot",  # Filtro básico para eventos del bot
                     maxResults=250,
                     pageToken=page_token,
@@ -240,10 +241,27 @@ def sincronizar_eventos(servicio, eventos, probabilidades):
                 # Podemos usar la importación para sobreescribir usando iCalUID
             }
 
-            # Usar 'import' inserta o actualiza basado en iCalUID
-            servicio.events().import_(
-                calendarId=calendar_id, body=evento_cuerpo
-            ).execute()
+            # Usar 'list' con iCalUID para ver si ya existe y actualizar en lugar de solo importar
+            busqueda = (
+                servicio.events()
+                .list(calendarId=calendar_id, iCalUID=partido["uid"])
+                .execute()
+            )
+            existentes = busqueda.get("items", [])
+
+            if existentes:
+                # Si existe, actualizamos el evento (especialmente la descripción con la probabilidad)
+                event_id = existentes[0]["id"]
+                print(f"Actualizando evento existente: {partido['summary']}")
+                servicio.events().update(
+                    calendarId=calendar_id, eventId=event_id, body=evento_cuerpo
+                ).execute()
+            else:
+                # Si no existe, lo insertamos
+                print(f"Insertando nuevo evento: {partido['summary']}")
+                servicio.events().insert(
+                    calendarId=calendar_id, body=evento_cuerpo
+                ).execute()
 
         except Exception as e:
             print(f"Error sincronizando {partido['summary']}: {e}")

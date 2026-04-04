@@ -4,9 +4,12 @@ Un bot automatizado en Python que descarga el calendario oficial de partidos del
 
 ## 🌟 Características
 
-- **Sincronización Automática:** Descarga el archivo `.ics` del FC Barcelona y añade/actualiza los eventos en Google Calendar.
-- **Predicción de Victoria:** Calcula e incluye automáticamente en la descripción del evento el **porcentaje de probabilidad de victoria** del Barça en base al sistema matemático oficial de [ClubElo](http://clubelo.com).
-- **Automatización Constante:** Utiliza GitHub Actions para ejecutarse 3 veces al día (Mañana a las 09:00, Mediodía a las 15:00 y Tarde/Noche a las 21:00) sin intervención manual.
+- **Sincronización Automática:** Descarga el archivo `.ics` del FC Barcelona y añade/actualiza los eventos en Google Calendar de forma fluida.
+- **Predicción de Victoria Actualizada:** Consulta las probabilidades de victoria del Barça para cada partido futuro utilizando el sistema [ClubElo](http://clubelo.com). La lógica ha sido optimizada para actualizar automáticamente la descripción de los eventos existentes en tu calendario.
+- **Calendario Siempre Limpio:** El bot implementa una función de filtrado y limpieza automática:
+  - **Solo Futuro:** Solo se sincronizan los partidos que aún no han comenzado.
+  - **Auto-Limpieza:** Se eliminan automáticamente del calendario los partidos ya finalizados, asegurando una vista despejada y centrada en los próximos encuentros.
+- **Automatización Constante:** Utiliza GitHub Actions para ejecutarse 3 veces al día (Mañana, Mediodía y Tarde/Noche) sin intervención manual.
 - **Contribuciones en GitHub:** Genera un commit automático en el archivo `log_partidos.md` tras cada ejecución exitosa, manteniendo activa tu gráfica de contribuciones.
 - **Fácil Despliegue:** Preparado para funcionar directamente en GitHub Actions usando Secrets.
 
@@ -55,11 +58,11 @@ Para que el bot se ejecute automáticamente todos los días en la nube:
 2. Abre el archivo `token.json` y copia todo su contenido.
 3. Ve a tu repositorio en GitHub > **Settings** > **Secrets and variables** > **Actions**.
 4. Crea un nuevo secreto llamado `GOOGLE_TOKEN_JSON` y pega el contenido de `token.json` como valor.
-5. ¡Listo! El bot se ejecutará automáticamente según el cronograma definido en `.github/workflows/run_bot.yml` (todos los días por la mañana, mediodía y noche). También puedes ejecutarlo manualmente desde la pestaña **Actions** usando el botón "Run workflow".
+5. ¡Listo! El bot se ejecutará automáticamente según el cronograma definido en `.github/workflows/run_bot.yml`.
 
 ## 📁 Estructura del Proyecto
 
-- `bot_barca.py`: Script principal que hace el fetching del `.ics` y la sincronización con Google Calendar.
+- `bot_barca.py`: Script principal que hace el fetching del `.ics`, obtiene probabilidades y sincroniza con Google Calendar (incluyendo limpieza de eventos pasados).
 - `generar_token.py`: Script auxiliar para realizar la primera autenticación OAuth y obtener el `token.json`.
 - `requirements.txt`: Dependencias de Python necesarias.
 - `.github/workflows/run_bot.yml`: Configuración del workflow de GitHub Actions.
@@ -67,8 +70,8 @@ Para que el bot se ejecute automáticamente todos los días en la nube:
 
 ## 📝 Notas Adicionales
 
-- Si cambias la cuenta de Google o los permisos expiran, es posible que necesites borrar el `token.json`, generar uno nuevo localmente y actualizar el secreto en GitHub.
-- El ID del calendario de destino por defecto es `primary` (tu calendario principal). Puedes modificar la variable `calendar_id` en `bot_barca.py` si deseas usar un calendario específico.
+- El bot utiliza el `iCalUID` de los eventos para evitar duplicados y permitir actualizaciones de datos (como el porcentaje de victoria) en eventos ya creados.
+- La limpieza automática elimina eventos cuya hora de finalización sea anterior a la hora actual de ejecución del bot.
 
 ---
 *Força Barça! 🔴🔵*
