@@ -12,10 +12,11 @@ Un bot automatizado en Python que descarga el calendario oficial de partidos del
 - **Automatización Constante:** Utiliza GitHub Actions para ejecutarse 3 veces al día (Mañana, Mediodía y Tarde/Noche) sin intervención manual.
 - **Contribuciones en GitHub:** Genera un commit automático en el archivo `log_partidos.md` tras cada ejecución exitosa, manteniendo activa tu gráfica de contribuciones.
 - **Fácil Despliegue:** Preparado para funcionar directamente en GitHub Actions usando Secrets.
+- **Arquitectura Modular:** Código organizado en módulos separados para mantenibilidad y pruebas.
 
 ## 🚀 Requisitos
 
-- Python 3.9 o superior (para ejecución local).
+- Python 3.12 o superior (para ejecución local).
 - Una cuenta de Google Cloud Platform (GCP) con la API de Google Calendar habilitada.
 - Credenciales OAuth 2.0 de Google (`credentials.json`).
 
@@ -27,7 +28,7 @@ Un bot automatizado en Python que descarga el calendario oficial de partidos del
    cd barca-calendar-bot
    python -m venv .venv
    source .venv/bin/activate  # En Windows: .venv\Scripts\activate
-   pip install -r requirements.txt
+   pip install -e .  # Instala el paquete en modo editable
    ```
 
 2. **Obtener las credenciales de Google API:**
@@ -50,6 +51,19 @@ Un bot automatizado en Python que descarga el calendario oficial de partidos del
    ```
    El script descargará el calendario, sincronizará los eventos con tu Google Calendar y añadirá una línea al archivo `log_partidos.md`.
 
+## 🧪 Ejecutar Tests
+
+El proyecto incluye una suite de pruebas para verificar la funcionalidad:
+
+```bash
+# Ejecutar todos los tests
+pytest
+
+# Ejecutar tests específicos
+pytest tests/calendar_cleaner/
+pytest tests/win_probability_fix/
+```
+
 ## ☁️ Configuración en GitHub Actions
 
 Para que el bot se ejecute automáticamente todos los días en la nube:
@@ -62,16 +76,64 @@ Para que el bot se ejecute automáticamente todos los días en la nube:
 
 ## 📁 Estructura del Proyecto
 
-- `bot_barca.py`: Script principal que hace el fetching del `.ics`, obtiene probabilidades y sincroniza con Google Calendar (incluyendo limpieza de eventos pasados).
-- `generar_token.py`: Script auxiliar para realizar la primera autenticación OAuth y obtener el `token.json`.
-- `requirements.txt`: Dependencias de Python necesarias.
-- `.github/workflows/run_bot.yml`: Configuración del workflow de GitHub Actions.
-- `log_partidos.md`: Archivo de registro que se actualiza automáticamente con cada ejecución.
+```
+├── bot_barca.py              # Script principal
+├── generar_token.py          # Autenticación OAuth inicial
+├── pyproject.toml            # Configuración del paquete Python
+├── requirements.txt          # Dependencias (legacy)
+├── README.md                 # Este archivo
+├── 00_REQUIREMENTS.md        # Requisitos detallados del proyecto
+├── AUDIT_REPORT.md           # Auditoría de código y mejoras
+├── PLAN.md                   # Plan de desarrollo
+├── log_partidos.md           # Registro automático de ejecuciones
+├── .github/workflows/
+│   └── run_bot.yml           # Workflow de GitHub Actions
+├── src/
+│   ├── calendar_cleaner/     # Módulo de limpieza de calendario
+│   │   ├── __init__.py
+│   │   ├── cleaner.py
+│   │   └── models.py
+│   ├── win_probability_fix/  # Módulo de probabilidades ClubElo
+│   │   ├── __init__.py
+│   │   ├── clubelo_client.py
+│   │   └── models.py
+│   ├── shared/               # Utilidades compartidas
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   └── logging_config.py
+│   └── __init__.py
+└── tests/                    # Suite de pruebas
+    ├── calendar_cleaner/
+    │   └── test_cleaner.py
+    ├── win_probability_fix/
+    │   └── test_probability.py
+    └── __init__.py
+```
+
+## 📦 Gestión de Dependencias
+
+El proyecto utiliza `pyproject.toml` para la gestión moderna de paquetes Python. Las dependencias principales incluyen:
+
+- `requests` y `httpx` para peticiones HTTP
+- `icalendar` para procesar calendarios ICS
+- `google-api-python-client` para la API de Google Calendar
+- `beautifulsoup4` y `lxml` para parsing HTML
+- `pydantic` para validación de datos
+- `pytest` para testing
 
 ## 📝 Notas Adicionales
 
 - El bot utiliza el `iCalUID` de los eventos para evitar duplicados y permitir actualizaciones de datos (como el porcentaje de victoria) en eventos ya creados.
 - La limpieza automática elimina eventos cuya hora de finalización sea anterior a la hora actual de ejecución del bot.
+- El sistema de probabilidades de ClubElo se cachea para reducir peticiones HTTP y mejorar el rendimiento.
+- El código ha sido refactorizado para seguir principios de diseño SOLID y facilitar el mantenimiento.
+
+## 🔄 Historial de Cambios
+
+- **v3.0.0**: Refactorización completa con arquitectura modular, tests y gestión moderna de paquetes.
+- **v2.0.0**: Añadida funcionalidad de limpieza automática y probabilidades de victoria.
+- **v1.0.0**: Sincronización básica del calendario.
 
 ---
+
 *Força Barça! 🔴🔵*
