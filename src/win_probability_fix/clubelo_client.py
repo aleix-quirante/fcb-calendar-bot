@@ -9,7 +9,6 @@ falling back to cached data or empty results.
 import csv
 import logging
 from io import StringIO
-from typing import Dict, Optional
 
 import httpx
 from cachetools import TTLCache
@@ -21,7 +20,7 @@ from src.win_probability_fix.models import ClubEloMatch
 logger = logging.getLogger(__name__)
 
 # Cache for ClubElo probabilities (singleton)
-cache: Optional[TTLCache] = None
+cache: TTLCache | None = None
 
 
 def get_cache() -> TTLCache:
@@ -38,7 +37,7 @@ class ClubEloClient:
 
     BASE_URL = "http://api.clubelo.com/Fixtures"
 
-    def __init__(self, timeout: Optional[int] = None):
+    def __init__(self, timeout: int | None = None):
         """
         Initialize client.
 
@@ -48,7 +47,7 @@ class ClubEloClient:
         self.timeout = timeout or settings.clubelo_timeout
         self.cache = get_cache()
 
-    def get_probabilities(self) -> Dict[str, float]:
+    def get_probabilities(self) -> dict[str, float]:
         """
         Fetch Barcelona win probabilities for upcoming matches.
 
@@ -74,7 +73,7 @@ class ClubEloClient:
         self.cache["probabilities"] = probabilities
         return probabilities
 
-    def _fetch_and_parse(self) -> Dict[str, float]:
+    def _fetch_and_parse(self) -> dict[str, float]:
         """
         Perform HTTP request, parse CSV, compute probabilities.
 

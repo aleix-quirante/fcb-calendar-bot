@@ -6,8 +6,7 @@ than a configurable retention period, with support for batch operations and dryâ
 """
 
 import time
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
@@ -36,8 +35,8 @@ class CalendarCleaner:
     def __init__(
         self,
         service: Resource,
-        calendar_id: Optional[str] = None,
-        config: Optional[CalendarCleanerConfig] = None,
+        calendar_id: str | None = None,
+        config: CalendarCleanerConfig | None = None,
     ):
         """
         Initialize the cleaner.
@@ -166,7 +165,7 @@ class CalendarCleaner:
             self._commit_batch(deleted_ids)
 
     def _list_events_page(
-        self, cutoff: datetime, page_token: Optional[str] = None
+        self, cutoff: datetime, page_token: str | None = None
     ) -> list[dict]:
         """
         Retrieve a single page of events that end before the cutoff.
@@ -183,7 +182,9 @@ class CalendarCleaner:
                 self.service.events()
                 .list(
                     calendarId=self.calendar_id,
-                    timeMax=cutoff.isoformat() + "Z",  # Google expects RFC3339 with Z
+                    timeMax=cutoff.strftime(
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    ),  # Google expects RFC3339 with Z
                     singleEvents=True,
                     orderBy="startTime",
                     maxResults=min(self.config.batch_size * 2, 250),
@@ -221,7 +222,7 @@ class CalendarCleaner:
             return False
 
         # Additional business logic: never delete future events (safety check)
-        if event.end > datetime.now(timezone.utc):
+        if event.end > datetime.now(UTC):
             logger.warning(
                 "Event ends in the future, skipping deletion",
                 extra={"event_id": event.id, "end": event.end.isoformat()},

@@ -1,6 +1,7 @@
-import requests
 import csv
 from io import StringIO
+
+import requests
 
 url = "http://api.clubelo.com/Fixtures"
 response = requests.get(url, timeout=10)

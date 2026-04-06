@@ -4,7 +4,7 @@ Configuración centralizada del Barça Calendar Bot usando pydantic-settings.
 Todas las variables de entorno se cargan automáticamente y se validan con Pydantic v2.
 """
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,7 +30,7 @@ class BotSettings(BaseSettings):
         default="primary",
         description="ID del calendario de Google (por defecto 'primary' para el calendario principal).",
     )
-    google_token_json: Optional[str] = Field(
+    google_token_json: str | None = Field(
         default=None,
         description="Contenido del token.json como string (para GitHub Actions). Si es None, se busca token.json en el filesystem.",
     )
@@ -39,6 +39,12 @@ class BotSettings(BaseSettings):
     ics_url: HttpUrl = Field(
         default="https://ics.fixtur.es/v2/fc-barcelona.ics",
         description="URL del calendario ICS del FC Barcelona.",
+    )
+
+    # RSS feed for match results (SportsSummaryAgent)
+    rss_feed_url: HttpUrl = Field(
+        default="https://example.com/barca-matches.rss",
+        description="URL del feed RSS con los resultados de partidos del FC Barcelona.",
     )
 
     # ClubElo API

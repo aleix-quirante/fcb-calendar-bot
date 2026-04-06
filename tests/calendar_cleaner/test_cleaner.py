@@ -2,7 +2,7 @@
 Unit tests for the CalendarCleaner module.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -52,7 +52,7 @@ def test_retention_cutoff():
     """Test retention_cutoff property."""
     config = CalendarCleanerConfig(retention_days=3)
     cutoff = config.retention_cutoff
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     # Cutoff should be approximately now - 3 days (allow a few seconds of drift)
     diff = now - cutoff
     assert diff.days == 3
@@ -100,8 +100,8 @@ def test_should_delete_with_filters(cleaner):
     event = GoogleEvent(
         id="test",
         summary="Barça vs Real Madrid",
-        start=datetime(2026, 4, 1, 10, 0, tzinfo=timezone.utc),
-        end=datetime(2026, 4, 1, 11, 0, tzinfo=timezone.utc),
+        start=datetime(2026, 4, 1, 10, 0, tzinfo=UTC),
+        end=datetime(2026, 4, 1, 11, 0, tzinfo=UTC),
         description="Barça Bot sync",
     )
     assert cleaner._should_delete(event) is True
@@ -118,7 +118,7 @@ def test_should_delete_with_filters(cleaner):
 
 def test_should_delete_future_event(cleaner):
     """Test that future events are not deleted."""
-    future = datetime.now(timezone.utc).replace(year=2030)
+    future = datetime.now(UTC).replace(year=2030)
     event = GoogleEvent(
         id="future",
         summary="Barça vs Future",
@@ -148,14 +148,14 @@ def test_list_events_page(mock_logger, cleaner, mock_service):
         },
     ]
     mock_execute = MagicMock(return_value={"items": mock_events})
-    mock_service.events().list().execute = mock_execute
+    mock_service.events.return_value.list.return_value.execute = mock_execute
 
-    cutoff = datetime(2026, 4, 1, tzinfo=timezone.utc)
+    cutoff = datetime(2026, 4, 1, tzinfo=UTC)
     result = cleaner._list_events_page(cutoff)
     assert len(result) == 2
     assert result[0]["id"] == "1"
     # Verify API call parameters
-    mock_service.events().list.assert_called_once_with(
+    mock_service.events.return_value.list.assert_called_once_with(
         calendarId="primary",
         timeMax="2026-04-01T00:00:00Z",
         singleEvents=True,
@@ -168,10 +168,10 @@ def test_list_events_page(mock_logger, cleaner, mock_service):
 @patch("src.calendar_cleaner.cleaner.logger")
 def test_list_events_page_error(mock_logger, cleaner, mock_service):
     """Test _list_events_page when API raises an error."""
-    mock_service.events().list().execute.side_effect = HttpError(
+    mock_service.events.return_value.list.return_value.execute.side_effect = HttpError(
         resp=MagicMock(status=500), content=b"Internal Server Error"
     )
-    cutoff = datetime(2026, 4, 1, tzinfo=timezone.utc)
+    cutoff = datetime(2026, 4, 1, tzinfo=UTC)
     with pytest.raises(HttpError):
         cleaner._list_events_page(cutoff)
     mock_logger.error.assert_called()
@@ -179,17 +179,17 @@ def test_list_events_page_error(mock_logger, cleaner, mock_service):
 
 def test_delete_event_success(cleaner, mock_service):
     """Test successful deletion of an event."""
-    mock_service.events().delete().execute.return_value = None
+    mock_service.events.return_value.delete.return_value.execute.return_value = None
     assert cleaner._delete_event("event123") is True
-    mock_service.events().delete.assert_called_once_with(
+    mock_service.events.return_value.delete.assert_called_once_with(
         calendarId="primary", eventId="event123"
     )
 
 
 def test_delete_event_failure(cleaner, mock_service):
     """Test deletion failure due to HTTP error."""
-    mock_service.events().delete().execute.side_effect = HttpError(
-        resp=MagicMock(status=404), content=b"Not Found"
+    mock_service.events.return_value.delete.return_value.execute.side_effect = (
+        HttpError(resp=MagicMock(status=404), content=b"Not Found")
     )
     assert cleaner._delete_event("event123") is False
 

@@ -9,7 +9,7 @@ En desarrollo se usa un formato legible por humanos.
 import json
 import logging
 import sys
-from typing import Any, Optional
+from typing import Any
 
 # Constantes
 JSON_LOGS_ENV_VAR = "JSON_LOGS"
@@ -78,7 +78,7 @@ def setup_logging(
     return logger
 
 
-def get_logger(name: Optional[str] = None) -> logging.Logger:
+def get_logger(name: str | None = None) -> logging.Logger:
     """
     Obtiene un logger con la configuración actual.
 

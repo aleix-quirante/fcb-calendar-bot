@@ -5,13 +5,12 @@ These tests verify that the system handles API failures gracefully, falling back
 data or default values without raising fatal exceptions.
 """
 
-import csv
 from datetime import datetime
-from io import StringIO
-from unittest.mock import MagicMock, patch, AsyncMock
-import pytest
+from unittest.mock import MagicMock, patch
+
 import httpx
-from httpx import TimeoutException, ConnectError
+import pytest
+from httpx import ConnectError, TimeoutException
 
 # Import the module to test (assuming it will be named clubelo_client)
 # We'll mock the actual import to avoid dependency on unimplemented code.

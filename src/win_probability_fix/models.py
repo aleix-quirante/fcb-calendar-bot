@@ -2,8 +2,6 @@
 Pydantic models for ClubElo CSV data and win probability calculations.
 """
 
-from datetime import date
-from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -103,7 +101,7 @@ class ClubEloMatch(BaseModel):
             + self.GD_ltm5
         )
 
-    def barcelona_win_probability(self) -> Optional[float]:
+    def barcelona_win_probability(self) -> float | None:
         """
         Return Barcelona's win probability for this match.
 

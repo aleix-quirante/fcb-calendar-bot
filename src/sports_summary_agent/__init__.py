@@ -4,8 +4,8 @@ Sports Summary Agent – Módulo para generar resúmenes automáticos post‑par
 Utiliza la API OpenAI‑compatible (Ollama/LocalAI) configurada en `src.shared.config`.
 """
 
-from typing import Optional
 import logging
+from typing import Optional
 
 from src.shared.config import settings
 
@@ -73,11 +73,56 @@ def get_openai_client():
     return _openai_client
 
 
+def create_agent(cache_enabled: bool = True):
+    """
+    Crea una instancia de SportsSummaryAgent configurada con los ajustes actuales.
+
+    Returns:
+        SportsSummaryAgent: Agente listo para usar.
+
+    Raises:
+        RuntimeError: Si el módulo está desactivado o falta configuración.
+    """
+    if not ENABLED:
+        raise RuntimeError(
+            "El módulo SportsSummaryAgent está desactivado (SUMMARY_ENABLED=False)."
+        )
+
+    # Importar aquí para evitar dependencias circulares
+    from src.sports_summary_agent.agent import SportsSummaryAgent
+    from src.sports_summary_agent.feed_client import FeedClient
+    from src.sports_summary_agent.llm_client import LLMClient
+
+    feed_url = str(settings.rss_feed_url)
+    feed_client = FeedClient(
+        feed_url=feed_url,
+        timeout=settings.summary_timeout,
+        max_retries=3,
+        retry_delay=1.0,
+    )
+
+    llm_client = LLMClient(
+        base_url=settings.ollama_base_url,
+        api_key=settings.ollama_api_key,
+        model=settings.summary_model,
+        timeout=settings.summary_timeout,
+        max_tokens=settings.summary_max_tokens,
+        temperature=settings.summary_temperature,
+        dry_run=False,  # Puede ser configurable en el futuro
+    )
+
+    return SportsSummaryAgent(
+        feed_client=feed_client,
+        llm_client=llm_client,
+        cache_enabled=cache_enabled,
+    )
+
+
 def generate_summary(
     match_result: dict,
-    model: Optional[str] = None,
-    temperature: Optional[float] = None,
-    max_tokens: Optional[int] = None,
+    model: str | None = None,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
 ) -> str:
     """
     Genera un resumen de 3 bullet points para un partido dado.
@@ -136,6 +181,7 @@ __all__ = [
     "config",
     "ENABLED",
     "get_openai_client",
+    "create_agent",
     "generate_summary",
     "update_event_with_summary",
 ]

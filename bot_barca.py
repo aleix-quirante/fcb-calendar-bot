@@ -1,18 +1,19 @@
-import os
-import requests
-import json
 import csv
+import json
+import os
+from datetime import UTC, datetime
 from io import StringIO
-from datetime import datetime, timezone, timedelta
-from icalendar import Calendar
 
+import requests
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from google.auth.transport.requests import Request
+from icalendar import Calendar
 
 from src.calendar_cleaner.cleaner import create_cleaner
 from src.calendar_cleaner.models import CalendarCleanerConfig
 from src.shared.config import settings
+from src.sports_summary_agent import create_agent
 
 # URL del calendario del Barça (formato .ics alternativo)
 URL_CALENDARIO = "https://ics.fixtur.es/v2/fc-barcelona.ics"
@@ -55,7 +56,7 @@ def obtener_probabilidades_barca():
                     prob_barca = prob_away_win
 
                 probabilidades[date] = round(prob_barca * 100, 1)
-            except Exception as e:
+            except Exception:
                 continue
 
     return probabilidades
@@ -101,12 +102,12 @@ def obtener_eventos_ics():
                 summary = "⚽ " + summary.strip()
 
             # Solo guardamos eventos futuros
-            now_utc = datetime.now(timezone.utc)
+            now_utc = datetime.now(UTC)
             if hasattr(dtstart, "tzinfo") and dtstart.tzinfo is not None:
                 diff = dtstart - now_utc
             else:
                 # Si es naive, asumimos UTC
-                diff = dtstart.replace(tzinfo=timezone.utc) - now_utc
+                diff = dtstart.replace(tzinfo=UTC) - now_utc
 
             # Guardamos solo eventos futuros (que no hayan empezado)
             if diff.total_seconds() > 0:
@@ -220,9 +221,7 @@ def sincronizar_eventos(servicio, eventos, probabilidades):
                 "sequence": int(
                     datetime.now().timestamp() % 1000000
                 ),  # Forzar actualización
-                "updated": datetime.now(timezone.utc)
-                .isoformat()
-                .replace("+00:00", "Z"),
+                "updated": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                 # Importante: para evitar duplicados si se actualiza
                 # Podemos usar la importación para sobreescribir usando iCalUID
             }
@@ -280,12 +279,25 @@ def main():
         if eventos and servicio:
             sincronizar_eventos(servicio, eventos, probabilidades)
 
+        # 5. Generar resúmenes automáticos (si está activado)
+        if settings.summary_enabled:
+            print("📰 Generando resúmenes automáticos de partidos...")
+            try:
+                agent = create_agent(cache_enabled=True)
+                summaries = agent.run()
+                print(f"✅ Generados {len(summaries)} resúmenes nuevos.")
+                # Aquí podríamos actualizar eventos de Google Calendar con los resúmenes
+                # (pendiente de implementar)
+            except Exception as e:
+                print(f"⚠️  Error generando resúmenes: {e}")
+                # No romper el flujo principal
+
     except Exception as e:
         print(f"❌ Error durante el proceso: {e}")
         # Queremos continuar para hacer el commit verde, aunque falle Google
 
     finally:
-        # 4. Actualizar log (mantiene el verde)
+        # 6. Actualizar log (mantiene el verde)
         registrar_ejecucion()
 
 

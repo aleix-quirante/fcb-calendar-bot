@@ -4,10 +4,9 @@ Pydantic models for the CalendarCleaner module.
 Defines data structures for Google Calendar events and configuration.
 """
 
-from datetime import datetime
-from typing import Optional
+from datetime import UTC, datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class GoogleEvent(BaseModel):
@@ -22,17 +21,17 @@ class GoogleEvent(BaseModel):
     start: datetime = Field(description="Start datetime of the event (timezone-aware).")
     end: datetime = Field(description="End datetime of the event (timezone-aware).")
     description: str = Field(default="", description="Description of the event.")
-    created: Optional[datetime] = Field(
+    created: datetime | None = Field(
         default=None, description="When the event was created (if available)."
     )
-    updated: Optional[datetime] = Field(
+    updated: datetime | None = Field(
         default=None, description="When the event was last updated (if available)."
     )
-    iCalUID: Optional[str] = Field(
+    iCalUID: str | None = Field(
         default=None, description="iCal UID of the event (if imported from ICS)."
     )
 
-    @field_validator("start", "end", mode="before")
+    @field_validator("start", "end", "created", "updated", mode="before")
     @classmethod
     def parse_datetime(cls, v):
         """
@@ -75,8 +74,7 @@ class GoogleEvent(BaseModel):
             self.start.hour == 0 and self.start.minute == 0 and self.start.second == 0
         )
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)
 
 
 class CalendarCleanerConfig(BaseModel):
@@ -102,11 +100,11 @@ class CalendarCleanerConfig(BaseModel):
         default=False,
         description="If True, no events will be deleted; only log what would be deleted.",
     )
-    filter_summary: Optional[str] = Field(
+    filter_summary: str | None = Field(
         default=None,
         description="If set, only events whose summary contains this string will be considered for deletion.",
     )
-    filter_description: Optional[str] = Field(
+    filter_description: str | None = Field(
         default=None,
         description="If set, only events whose description contains this string will be considered for deletion.",
     )
@@ -119,15 +117,11 @@ class CalendarCleanerConfig(BaseModel):
         Returns:
             datetime: Cutoff datetime (UTC).
         """
-        from datetime import timedelta
-
-        from src.shared.config import settings
-
         # Use current time from settings (or datetime.utcnow) minus retention_days
         # In production we should use timezone‑aware UTC.
-        from datetime import timezone
+        from datetime import timedelta
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return now - timedelta(days=self.retention_days)
 
     @field_validator("retention_days")
