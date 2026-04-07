@@ -27,6 +27,7 @@ class FeedClient:
         timeout: int = 10,
         max_retries: int = 3,
         retry_delay: float = 1.0,
+        ssl_verify: bool = True,
     ):
         """
         Initialize the feed client.
@@ -36,6 +37,7 @@ class FeedClient:
             timeout: HTTP timeout in seconds.
             max_retries: Maximum number of retries for transient failures.
             retry_delay: Delay between retries in seconds (will be increased exponentially).
+            ssl_verify: Whether to verify SSL certificates (set False for self‑signed or tunnel endpoints).
         """
         self.feed_url = feed_url
         self.timeout = timeout
@@ -44,6 +46,7 @@ class FeedClient:
         self._http_client = httpx.Client(
             timeout=timeout,
             follow_redirects=True,
+            verify=ssl_verify,
         )
 
     def fetch_match_results(self) -> list[MatchResult]:

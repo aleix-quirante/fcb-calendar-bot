@@ -99,6 +99,7 @@ def create_agent(cache_enabled: bool = True):
         timeout=settings.summary_timeout,
         max_retries=3,
         retry_delay=1.0,
+        ssl_verify=settings.ollama_ssl_verify,
     )
 
     llm_client = LLMClient(

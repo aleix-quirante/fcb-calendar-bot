@@ -20,6 +20,7 @@ def feed_client():
         feed_url="https://example.com/feed.xml",
         timeout=10,
         max_retries=3,
+        ssl_verify=False,
     )
 
 
@@ -30,9 +31,10 @@ def test_feed_client_initialization(feed_client):
     assert feed_client.max_retries == 3
 
 
-@patch("src.sports_summary_agent.feed_client.httpx")
-def test_fetch_match_results_success(mock_httpx, feed_client):
+@patch("httpx.Client")
+def test_fetch_match_results_success(mock_client_class, feed_client):
     """Test successful parsing of a valid RSS feed."""
+    mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.text = """
@@ -47,7 +49,8 @@ def test_fetch_match_results_success(mock_httpx, feed_client):
         </channel>
     </rss>
     """
-    mock_httpx.get.return_value = mock_response
+    mock_client.get.return_value = mock_response
+    mock_client_class.return_value = mock_client
 
     results = feed_client.fetch_match_results()
     assert len(results) == 1
@@ -58,61 +61,66 @@ def test_fetch_match_results_success(mock_httpx, feed_client):
     assert result.away_score == 1
     assert result.match_date == date(2026, 4, 5)
     assert result.competition == "La Liga"
-    mock_httpx.get.assert_called_once_with(
-        "https://example.com/feed.xml",
-        timeout=10,
-        follow_redirects=True,
-    )
+    mock_client.get.assert_called_once_with("https://example.com/feed.xml")
 
 
-@patch("src.sports_summary_agent.feed_client.httpx")
-def test_fetch_match_results_http_error(mock_httpx, feed_client):
+@patch("httpx.Client")
+def test_fetch_match_results_http_error(mock_client_class, feed_client):
     """Test handling of HTTP errors (404, 500, etc.)."""
-    mock_httpx.get.side_effect = httpx.HTTPStatusError(
+    mock_client = MagicMock()
+    mock_client.get.side_effect = httpx.HTTPStatusError(
         "Not Found",
         request=MagicMock(),
         response=MagicMock(status_code=404),
     )
+    mock_client_class.return_value = mock_client
     with pytest.raises(FeedClientError, match="HTTP error"):
         feed_client.fetch_match_results()
 
 
-@patch("src.sports_summary_agent.feed_client.httpx")
-def test_fetch_match_results_timeout(mock_httpx, feed_client):
+@patch("httpx.Client")
+def test_fetch_match_results_timeout(mock_client_class, feed_client):
     """Test handling of request timeout."""
-    mock_httpx.get.side_effect = httpx.TimeoutException("Request timed out")
+    mock_client = MagicMock()
+    mock_client.get.side_effect = httpx.TimeoutException("Request timed out")
+    mock_client_class.return_value = mock_client
     with pytest.raises(FeedClientError, match="Timeout"):
         feed_client.fetch_match_results()
 
 
-@patch("src.sports_summary_agent.feed_client.httpx")
-def test_fetch_match_results_retry_success(mock_httpx, feed_client):
+@patch("httpx.Client")
+def test_fetch_match_results_retry_success(mock_client_class, feed_client):
     """Test that retries work after transient failures."""
-    mock_httpx.get.side_effect = [
+    mock_client = MagicMock()
+    mock_client.get.side_effect = [
         httpx.TimeoutException("First attempt timed out"),
         MagicMock(status_code=200, text="<rss><channel></channel></rss>"),
     ]
+    mock_client_class.return_value = mock_client
     # Should not raise after retry
     results = feed_client.fetch_match_results()
     assert results == []  # empty feed
-    assert mock_httpx.get.call_count == 2
+    assert mock_client.get.call_count == 2
 
 
-@patch("src.sports_summary_agent.feed_client.httpx")
-def test_fetch_match_results_malformed_xml(mock_httpx, feed_client):
+@patch("httpx.Client")
+def test_fetch_match_results_malformed_xml(mock_client_class, feed_client):
     """Test handling of malformed XML that cannot be parsed."""
+    mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.text = "This is not XML"
-    mock_httpx.get.return_value = mock_response
+    mock_client.get.return_value = mock_response
+    mock_client_class.return_value = mock_client
 
     with pytest.raises(FeedClientError, match="Failed to parse feed"):
         feed_client.fetch_match_results()
 
 
-@patch("src.sports_summary_agent.feed_client.httpx")
-def test_fetch_match_results_invalid_score_format(mock_httpx, feed_client):
+@patch("httpx.Client")
+def test_fetch_match_results_invalid_score_format(mock_client_class, feed_client):
     """Test handling of feed items with invalid score format."""
+    mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.text = """
@@ -125,7 +133,8 @@ def test_fetch_match_results_invalid_score_format(mock_httpx, feed_client):
         </channel>
     </rss>
     """
-    mock_httpx.get.return_value = mock_response
+    mock_client.get.return_value = mock_response
+    mock_client_class.return_value = mock_client
 
     # Should skip items that cannot be parsed
     results = feed_client.fetch_match_results()
