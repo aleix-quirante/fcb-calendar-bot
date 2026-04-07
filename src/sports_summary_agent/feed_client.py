@@ -46,7 +46,7 @@ class FeedClient:
         self._http_client = httpx.Client(
             timeout=timeout,
             follow_redirects=True,
-            verify=ssl_verify,
+            verify=False,
         )
 
     def fetch_match_results(self) -> list[MatchResult]:
