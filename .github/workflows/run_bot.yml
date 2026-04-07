@@ -31,8 +31,8 @@ jobs:
 
       - name: Instalar dependencias
         run: |
-          pip install -r requirements.txt
-          echo "Dependencies installed successfully"
+          pip install .
+          echo "Dependencies installed successfully from pyproject.toml"
 
       - name: Verificar instalación de dependencias
         run: |
