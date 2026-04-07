@@ -4,6 +4,7 @@ LLM client for generating match summaries using an OpenAI‑compatible API.
 
 import json
 import logging
+import httpx
 
 from openai import OpenAI, OpenAIError
 from pydantic import ValidationError
@@ -31,6 +32,7 @@ class LLMClient:
         max_tokens: int = 300,
         temperature: float = 0.7,
         dry_run: bool = False,
+        ssl_verify: bool = True,
     ):
         """
         Initialize the LLM client.
@@ -43,6 +45,7 @@ class LLMClient:
             max_tokens: Maximum tokens to generate.
             temperature: Sampling temperature (0.0–1.0).
             dry_run: If True, no actual API call is made; a dummy summary is returned.
+            ssl_verify: Whether to verify SSL certificates (set False for self‑signed or tunnel endpoints).
         """
         self.base_url = base_url
         self.api_key = api_key
@@ -51,16 +54,19 @@ class LLMClient:
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.dry_run = dry_run
+        self.ssl_verify = ssl_verify
         self._client: OpenAI | None = None
 
     @property
     def client(self) -> OpenAI:
         """Lazy initialization of the OpenAI client."""
         if self._client is None:
+            http_client = httpx.Client(verify=self.ssl_verify, timeout=self.timeout)
             self._client = OpenAI(
                 base_url=self.base_url,
                 api_key=self.api_key,
                 timeout=self.timeout,
+                http_client=http_client,
             )
         return self._client
 

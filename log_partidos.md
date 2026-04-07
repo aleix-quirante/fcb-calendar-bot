@@ -1,12 +1,8 @@
 
 - ✅ Actualizado el 2026-03-11 20:45:23: Calendario sincronizado con Google.
-<<<<<<< HEAD
-- ✅ Actualizado el 2026-03-11 20:51:35: Calendario sincronizado con Google.
-=======
 - ✅ Actualizado el 2026-03-11 20:51:35: Calendario sincronizado con Google.
 - ✅ Actualizado el 2026-03-11 21:05:03: Calendario sincronizado con Google.
 - ✅ Actualizado el 2026-03-13 10:48:34: Calendario sincronizado con Google.
->>>>>>> bef79cd (add git account)
 
 - ✅ Actualizado el 2026-03-17 11:06:22: Calendario sincronizado con Google.
 - ✅ Actualizado el 2026-03-17 11:43:05: Calendario sincronizado con Google.
@@ -358,6 +354,13 @@
 - ✅ Actualizado el 2026-04-04 16:25:50: Calendario sincronizado con Google.
 - ✅ Actualizado el 2026-04-04 17:22:43: Calendario sincronizado con Google.
 - ✅ Actualizado el 2026-04-04 18:29:44: Calendario sincronizado con Google.
+<<<<<<< Updated upstream
 - ✅ Actualizado el 2026-04-07 17:51:33: Calendario sincronizado con Google.
 - ✅ Actualizado el 2026-04-07 17:52:50: Calendario sincronizado con Google.
 - ✅ Actualizado el 2026-04-07 18:32:01: Calendario sincronizado con Google.
+=======
+- ✅ Actualizado el 2026-04-07 20:16:17: Calendario sincronizado con Google.
+- ✅ Actualizado el 2026-04-07 20:17:46: Calendario sincronizado con Google.
+- ✅ Actualizado el 2026-04-07 20:24:40: Calendario sincronizado con Google.
+- ✅ Actualizado el 2026-04-07 20:27:43: Calendario sincronizado con Google.
+>>>>>>> Stashed changes

@@ -74,6 +74,10 @@ class BotSettings(BaseSettings):
         default="ollama",
         description="API Key para Ollama/LocalAI (por defecto 'ollama', puede dejarse vacía para local).",
     )
+    ollama_ssl_verify: bool = Field(
+        default=True,
+        description="Verificar certificados SSL para la conexión a Ollama/LocalAI. Desactivar para túneles Cloudflare con certificados autofirmados.",
+    )
     summary_model: str = Field(
         default="llama3.2:3b",
         description="Modelo de lenguaje a utilizar para generación de resúmenes.",

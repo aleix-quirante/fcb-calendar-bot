@@ -109,6 +109,7 @@ def create_agent(cache_enabled: bool = True):
         max_tokens=settings.summary_max_tokens,
         temperature=settings.summary_temperature,
         dry_run=False,  # Puede ser configurable en el futuro
+        ssl_verify=settings.ollama_ssl_verify,
     )
 
     return SportsSummaryAgent(

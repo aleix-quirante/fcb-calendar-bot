@@ -8,6 +8,7 @@ import requests
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from icalendar import Calendar
 
 from src.calendar_cleaner.cleaner import create_cleaner
@@ -238,9 +239,30 @@ def sincronizar_eventos(servicio, eventos, probabilidades):
                 # Si existe, actualizamos el evento (especialmente la descripción con la probabilidad)
                 event_id = existentes[0]["id"]
                 print(f"Actualizando evento existente: {partido['summary']}")
-                servicio.events().update(
-                    calendarId=calendar_id, eventId=event_id, body=evento_cuerpo
-                ).execute()
+                # Crear una copia del cuerpo sin 'sequence' y 'updated' para evitar errores de secuencia
+                update_body = evento_cuerpo.copy()
+                update_body.pop("sequence", None)
+                update_body.pop("updated", None)
+                try:
+                    servicio.events().update(
+                        calendarId=calendar_id, eventId=event_id, body=update_body
+                    ).execute()
+                except HttpError as e:
+                    # Si el error es de secuencia, borramos y recreamos
+                    if "Invalid sequence" in str(e) or "sequence" in str(e).lower():
+                        print(
+                            f"Error de secuencia detectado, recreando evento: {partido['summary']}"
+                        )
+                        servicio.events().delete(
+                            calendarId=calendar_id, eventId=event_id
+                        ).execute()
+                        # Insertar nuevo evento
+                        servicio.events().insert(
+                            calendarId=calendar_id, body=evento_cuerpo
+                        ).execute()
+                        print(f"Evento recreado: {partido['summary']}")
+                    else:
+                        raise
             else:
                 # Si no existe, lo insertamos
                 print(f"Insertando nuevo evento: {partido['summary']}")
