@@ -74,6 +74,8 @@ Para que el bot se ejecute automáticamente todos los días en la nube:
 4. Crea un nuevo secreto llamado `GOOGLE_TOKEN_JSON` y pega el contenido de `token.json` como valor.
 5. ¡Listo! El bot se ejecutará automáticamente según el cronograma definido en `.github/workflows/run_bot.yml`.
 
+**Nota sobre compatibilidad:** El workflow está configurado para usar Node.js 24 (mediante la variable de entorno `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`) y la acción `actions/setup-python@v5` para evitar advertencias de deprecación de Node.js 20. Esto asegura que el bot seguirá funcionando después de que Node.js 20 sea eliminado de los runners de GitHub Actions en septiembre de 2026.
+
 ## 📁 Estructura del Proyecto
 
 ```
