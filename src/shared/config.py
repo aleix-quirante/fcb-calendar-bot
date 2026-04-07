@@ -79,7 +79,7 @@ class BotSettings(BaseSettings):
         description="Verificar certificados SSL para la conexión a Ollama/LocalAI. Desactivar para túneles Cloudflare con certificados autofirmados.",
     )
     summary_model: str = Field(
-        default="llama3.2:3b",
+        default="qwen3:14b",
         description="Modelo de lenguaje a utilizar para generación de resúmenes.",
     )
     summary_max_tokens: int = Field(
