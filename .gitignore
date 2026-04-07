@@ -11,6 +11,7 @@ ENV/
 # Credenciales y secretos (¡NUNCA SUBIR A GITHUB!)
 credentials.json
 token.json
+token.json.backup
 client_secret_*.json
 .env
 
