@@ -43,7 +43,7 @@ class BotSettings(BaseSettings):
 
     # RSS feed for match results (SportsSummaryAgent)
     rss_feed_url: HttpUrl = Field(
-        default="https://barcauniversal.com/feed/",
+        default="https://e00-marca.uecdn.es/rss/futbol/barcelona.xml",
         description="URL del feed RSS con los resultados de partidos del FC Barcelona.",
     )
 
