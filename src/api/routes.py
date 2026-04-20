@@ -1,71 +1,30 @@
+URL_CALENDARIO = "https://ics.fixtur.es/v2/fc-barcelona.ics"
+SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
+
+from fastapi import APIRouter
 import csv
 import json
 import os
 from datetime import UTC, datetime
 from io import StringIO
-
 import requests
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from icalendar import Calendar
-
 from src.calendar_cleaner.cleaner import create_cleaner
 from src.calendar_cleaner.models import CalendarCleanerConfig
 from src.shared.config import settings
 from src.sports_summary_agent import create_agent
+from src.sports_summary_agent.agent import update_event_with_prematch_analysis
 
-# URL del calendario del Barça (formato .ics alternativo)
-URL_CALENDARIO = "https://ics.fixtur.es/v2/fc-barcelona.ics"
-SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
-
-
-def obtener_probabilidades_barca():
-    """Obtiene las probabilidades de victoria del Barça para los próximos partidos usando ClubElo (Sin API Key)"""
-    print("Consultando probabilidades en ClubElo...")
-    url = "http://api.clubelo.com/Fixtures"
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-    except Exception as e:
-        print(f"Error descargando ClubElo: {e}")
-        return {}
-
-    probabilidades = {}
-    csv_reader = csv.DictReader(StringIO(response.text))
-
-    for row in csv_reader:
-        home = row.get("Home", "")
-        away = row.get("Away", "")
-        date = row.get("Date", "")
-
-        if home == "Barcelona" or away == "Barcelona":
-            try:
-                prob_home_win = sum(
-                    float(row[col])
-                    for col in ["GD=1", "GD=2", "GD=3", "GD=4", "GD=5", "GD>5"]
-                )
-                prob_away_win = sum(
-                    float(row[col])
-                    for col in ["GD=-1", "GD=-2", "GD=-3", "GD=-4", "GD=-5", "GD<-5"]
-                )
-
-                if home == "Barcelona":
-                    prob_barca = prob_home_win
-                else:
-                    prob_barca = prob_away_win
-
-                probabilidades[date] = round(prob_barca * 100, 1)
-            except Exception:
-                continue
-
-    return probabilidades
+router = APIRouter()
 
 
 def obtener_eventos_ics():
     """Descarga y parsea el archivo ICS del Barça"""
-    print(f"Descargando calendario desde {URL_CALENDARIO}...")
+    print(f"Descargando calendario desde {URL_CALENDARIO}..")
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(URL_CALENDARIO, headers=headers)
 
@@ -124,6 +83,48 @@ def obtener_eventos_ics():
 
     print(f"Se encontraron {len(eventos)} partidos confirmados en el ICS.")
     return eventos
+
+
+def obtener_probabilidades_barca():
+    """Obtiene las probabilidades de victoria del Barça para los próximos partidos usando ClubElo (Sin API Key)"""
+    print("Consultando probabilidades en ClubElo...")
+    url = "http://api.clubelo.com/Fixtures"
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"Error descargando ClubElo: {e}")
+        return {}
+
+    probabilidades = {}
+    csv_reader = csv.DictReader(StringIO(response.text))
+
+    for row in csv_reader:
+        home = row.get("Home", "")
+        away = row.get("Away", "")
+        date = row.get("Date", "")
+
+        if home == "Barcelona" or away == "Barcelona":
+            try:
+                prob_home_win = sum(
+                    float(row[col])
+                    for col in ["GD=1", "GD=2", "GD=3", "GD=4", "GD=5", "GD>5"]
+                )
+                prob_away_win = sum(
+                    float(row[col])
+                    for col in ["GD=-1", "GD=-2", "GD=-3", "GD=-4", "GD=-5", "GD<-5"]
+                )
+
+                if home == "Barcelona":
+                    prob_barca = prob_home_win
+                else:
+                    prob_barca = prob_away_win
+
+                probabilidades[date] = round(prob_barca * 100, 1)
+            except Exception:
+                continue
+
+    return probabilidades
 
 
 def obtener_servicio_google():
@@ -284,72 +285,38 @@ def registrar_ejecucion():
     print("¡Registro de Markdown actualizado!")
 
 
-def main():
+@router.post("/api/v1/calendar/sync")
+async def sync_calendar():
     print("⚽ Iniciando Barça Bot...")
-
     try:
         # 1. Obtener eventos de FC Barcelona
         eventos = obtener_eventos_ics()
-
         # 2. Obtener probabilidades
         probabilidades = obtener_probabilidades_barca()
-
         # 3. Conectar a Google
         servicio = obtener_servicio_google()
-
         # 4. Sincronizar
         if eventos and servicio:
             sincronizar_eventos(servicio, eventos, probabilidades)
-
         # 5. Generar análisis pre-partido (si está activado)
         if settings.summary_enabled:
             print("🔮 Generando análisis pre-partido del próximo partido...")
             try:
-                from src.sports_summary_agent import (
-                    create_agent,
-                    update_event_with_prematch_analysis,
-                )
-
                 agent = create_agent(cache_enabled=True, calendar_service=servicio)
                 analyses = agent.run()
-
                 if analyses:
                     print(
                         f"✅ Generado análisis pre-partido para {len(analyses)} partido(s)."
                     )
-                    # Actualizar el evento de Google Calendar con el análisis
-                    for analysis in analyses:
-                        # Formatear el análisis para la descripción del evento
-                        analysis_text = "\n".join(
-                            [f"• {point}" for point in analysis.analysis_points]
-                        )
-                        analysis_text += f"\n\n📋 {analysis.tactical_preview}"
-
-                        # Buscar el evento correspondiente
-                        # El match_id contiene la información del partido
-                        # Necesitamos encontrar el event_id del próximo partido
-                        # (esto ya se hace en el agente, pero necesitamos pasarlo)
-                        print(f"📝 Análisis generado para partido: {analysis.match_id}")
-                        print(analysis_text)
-                        # La actualización del evento se hará en una futura iteración
-                        # cuando tengamos el event_id disponible desde el agente
                 else:
                     print("ℹ️  No se encontró próximo partido para generar análisis.")
             except Exception as e:
                 print(f"⚠️  Error generando análisis pre-partido: {e}")
-                import traceback
-
-                traceback.print_exc()
-                # No romper el flujo principal
-
+        # 6. Actualizar log (mantiene el verde)
+        registrar_ejecucion()
     except Exception as e:
         print(f"❌ Error durante el proceso: {e}")
-        # Queremos continuar para hacer el commit verde, aunque falle Google
-
     finally:
         # 6. Actualizar log (mantiene el verde)
         registrar_ejecucion()
-
-
-if __name__ == "__main__":
-    main()
+    return {"status": "success"}

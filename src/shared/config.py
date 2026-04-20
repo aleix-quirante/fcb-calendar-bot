@@ -6,8 +6,8 @@ Todas las variables de entorno se cargan automáticamente y se validan con Pydan
 
 from typing import Literal
 
-from pydantic import Field, HttpUrl, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import ConfigDict, Field, HttpUrl, field_validator
+from pydantic_settings import BaseSettings
 
 
 class BotSettings(BaseSettings):
@@ -18,11 +18,12 @@ class BotSettings(BaseSettings):
     Ejemplo: BARCA_GOOGLE_CALENDAR_ID='primary'
     """
 
-    model_config = SettingsConfigDict(
+    model_config = ConfigDict(
+        strict=True,
+        extra="forbid",
         env_prefix="BARCA_",
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore",
     )
 
     # Google Calendar
