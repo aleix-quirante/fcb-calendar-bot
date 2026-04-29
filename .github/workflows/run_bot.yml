@@ -20,8 +20,17 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout del código
+      - name: Checkout del código (forzar limpieza)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          clean: true
+
+      - name: Limpiar cachés de Python
+        run: |
+          rm -rf .pytest_cache .ruff_cache .venv
+          find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find . -name "*.pyc" -delete
 
       - name: Configurar Python
         uses: actions/setup-python@v5
