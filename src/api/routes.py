@@ -26,7 +26,12 @@ def obtener_eventos_ics():
     """Descarga y parsea el archivo ICS del Barça"""
     print(f"Descargando calendario desde {URL_CALENDARIO}..")
     headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(URL_CALENDARIO, headers=headers)
+    try:
+        response = requests.get(URL_CALENDARIO, headers=headers, timeout=15)
+        response.raise_for_status()
+    except Exception as e:
+        print(f"Error descargando ICS: {e}")
+        return []
 
     if response.status_code != 200:
         print(f"Error al descargar ICS: {response.status_code}")
